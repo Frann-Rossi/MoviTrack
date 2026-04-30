@@ -166,7 +166,7 @@ app.post('/chat', zValidator('json', z.object({
 
   const completion = await groq.chat.completions.create({
     messages: groqMessages,
-    model: "llama-3.3-70b-specdec",
+    model: "llama-3.3-70b-versatile",
     temperature: 0.7,
     max_tokens: 500,
   });
