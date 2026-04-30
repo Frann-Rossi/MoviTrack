@@ -1,8 +1,29 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Dashboard from '../components/Dashboard.tsx';
+import ChatAssistant from '../components/ChatAssistant.tsx';
+import Login from '../components/Login.tsx';
+import { auth } from '../lib/auth';
+
+let session = null;
+try {
+  session = await auth.api.getSession({
+    headers: Astro.request.headers,
+  });
+} catch (e) {
+  console.error("Error verificando sesión:", e);
+}
+
+const isAuthenticated = !!session;
 ---
 
-<Layout title="MoviTrack - Dashboard">
-	<Dashboard client:load />
+<Layout title="MoviTrack - Gestión Financiera">
+  {isAuthenticated ? (
+    <>
+      <Dashboard client:load />
+      <ChatAssistant client:load />
+    </>
+  ) : (
+    <Login client:load />
+  )}
 </Layout>

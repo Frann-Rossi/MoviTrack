@@ -1,43 +1,86 @@
-# Astro Starter Kit: Minimal
+# 💸 MoviTrack - Gestión Financiera Inteligente
 
-```sh
-npm create astro@latest -- --template minimal
+MoviTrack es una aplicación web moderna, rápida y segura diseñada para ayudarte a tomar el control de tus finanzas personales. Más que un simple registro de gastos, cuenta con una Inteligencia Artificial integrada que analiza tus movimientos y te ayuda a generar informes.
+
+![MoviTrack](/public/favicon.svg) <!-- Si agregas un pantallazo, ponlo aquí -->
+
+## ✨ Características Principales
+
+- **Dashboard Intuitivo:** Visualiza tu saldo, ingresos y egresos al instante con un diseño "Glassmorphism" premium.
+- **MoviBot (IA Integrada):** Un asistente financiero potenciado por LLaMA 3 (Groq) que conoce tu historial reciente y te da consejos personalizados.
+- **Sistema de Usuarios Seguro:** Autenticación completa impulsada por Neon Auth (Better Auth). Tus datos son privados y exclusivos para ti.
+- **Exportación a PDF:** Genera informes financieros estéticos y detallados con un solo clic.
+- **Diseño Mobile-First:** Totalmente responsivo. En móviles, las tablas se transforman en tarjetas amigables para una mejor lectura.
+
+## 🛠️ Stack Tecnológico
+
+Esta aplicación fue construida utilizando las herramientas más modernas del ecosistema web:
+
+- **Frontend:** [Astro](https://astro.build/) + [React](https://react.dev/) + [Tailwind CSS v4](https://tailwindcss.com/)
+- **Backend (API):** [Hono](https://hono.dev/) (Ejecutándose sobre los endpoints de Astro)
+- **Base de Datos:** [PostgreSQL (Neon)](https://neon.tech/) gestionada con [Drizzle ORM](https://orm.drizzle.team/)
+- **Autenticación:** [Better Auth](https://better-auth.com/) (Neon Auth)
+- **Inteligencia Artificial:** [Groq SDK](https://groq.com/) (Modelo `llama-3.3-70b-specdec`)
+- **Despliegue:** Preparado nativamente para [Vercel](https://vercel.com/) (Serverless)
+
+---
+
+## 🚀 Guía de Instalación Local
+
+Sigue estos pasos para correr MoviTrack en tu propia máquina.
+
+### 1. Clonar el repositorio e instalar dependencias
+
+```bash
+git clone <URL_DE_TU_REPO>
+cd MoviTrack
+npm install
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+### 2. Configurar Variables de Entorno
 
-## 🚀 Project Structure
+Crea un archivo llamado `.env` en la raíz del proyecto. Deberás completarlo con tus propias claves:
 
-Inside of your Astro project, you'll see the following folders and files:
+```env
+# URL de conexión de tu base de datos Neon
+DATABASE_URL="postgresql://usuario:contraseña@servidor.neon.tech/neondb?sslmode=require"
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+# API Key de Groq para que funcione MoviBot
+GROQ_API_KEY="gsk_tu_clave_aqui"
+
+# URL base de la aplicación (usar localhost para desarrollo)
+BETTER_AUTH_URL="http://localhost:4321"
+
+# Un string largo y aleatorio para encriptar las sesiones (puedes inventarlo)
+BETTER_AUTH_SECRET="cualquier_cadena_larga_y_segura_aqui"
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+### 3. Migrar la Base de Datos
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Antes de arrancar, debes crear las tablas en tu base de datos Neon:
 
-Any static assets, like images, can be placed in the `public/` directory.
+```bash
+npx drizzle-kit push
+```
 
-## 🧞 Commands
+### 4. ¡Iniciar Servidor!
 
-All commands are run from the root of the project, from a terminal:
+```bash
+npm run dev
+```
+Abre `http://localhost:4321` en tu navegador. Deberías ver la pantalla de inicio de sesión.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+---
 
-## 👀 Want to learn more?
+## ☁️ Despliegue en Vercel
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+MoviTrack está configurado con el adaptador `@astrojs/vercel`. Para subirlo a producción:
+
+1. Sube tu código a GitHub.
+2. Crea un nuevo proyecto en **Vercel** e importa tu repositorio.
+3. En la sección de **Environment Variables** de Vercel, agrega las 4 variables de tu archivo `.env`.
+   - ⚠️ **IMPORTANTE:** Recuerda cambiar `BETTER_AUTH_URL` por el dominio real que te asigne Vercel (ej: `https://movitrack.vercel.app`), asegurándote de incluir `https://` y no dejar una barra `/` al final.
+4. Dale a "Deploy". Vercel compilará Astro en modo Serverless automáticamente.
+
+---
+*Desarrollado con ❤️ para organizar mejor las finanzas.*
