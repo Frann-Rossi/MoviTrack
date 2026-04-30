@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { authClient } from '../lib/auth-client';
-import { Wallet, Mail, Lock, LogIn } from 'lucide-react';
+import { Wallet, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
 
 export default function Login() {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -14,9 +16,15 @@ export default function Login() {
     setError('');
 
     try {
-      const { error } = await authClient.signIn.email({ email, password });
-      if (error) throw new Error(error.message || 'Error al iniciar sesión');
-      window.location.reload();
+      if (isLogin) {
+        const { error } = await authClient.signIn.email({ email, password });
+        if (error) throw new Error(error.message || 'Error al iniciar sesión');
+        window.location.reload();
+      } else {
+        const { error } = await authClient.signUp.email({ email, password, name });
+        if (error) throw new Error(error.message || 'Error al registrarse');
+        window.location.reload();
+      }
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado');
     } finally {
@@ -38,9 +46,49 @@ export default function Login() {
         </div>
 
         <div className="glass-card p-8">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Iniciar Sesión</h2>
-          
+          <div className="flex gap-4 mb-8">
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${
+                isLogin 
+                  ? 'bg-blue-500/10 text-blue-400 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${
+                !isLogin 
+                  ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Registrarse
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
+            {!isLogin && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Nombre</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                    <UserPlus size={18} />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Tu nombre completo"
+                    className="input-field"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Email</label>
               <div className="relative">
@@ -91,7 +139,7 @@ export default function Login() {
               ) : (
                 <>
                   <LogIn size={20} />
-                  <span>Entrar a mi cuenta</span>
+                  <span>{isLogin ? 'Entrar a mi cuenta' : 'Crear mi cuenta'}</span>
                 </>
               )}
             </button>
