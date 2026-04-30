@@ -33,10 +33,13 @@ export default function ChatAssistant() {
     setIsLoading(true);
 
     try {
+      // Tomamos hasta las últimas 3 interacciones para darle contexto sin sobrecargar
+      const historyToSend = messages.slice(-3).map(m => ({ role: m.role, content: m.content }));
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ messages: [...historyToSend, { role: 'user', content: userMessage }] }),
       });
 
       const data = await response.json();

@@ -9,7 +9,11 @@ import { z } from 'zod';
 import type { APIRoute } from 'astro';
 import { auth } from '../../lib/auth';
 
-const app = new Hono().basePath('/api');
+type Variables = {
+  user: { id: string; name: string; email: string };
+};
+
+const app = new Hono<{ Variables: Variables }>().basePath('/api');
 app.use('*', logger());
 
 // Exponer rutas de Better Auth
@@ -113,10 +117,15 @@ app.post('/categorias', zValidator('json', z.object({ nombre: z.string().min(1) 
   return c.json(newCategoria, 201);
 });
 
-app.post('/chat', zValidator('json', z.object({ message: z.string().min(1) })), async (c) => {
-  const { message } = c.req.valid('json');
+app.post('/chat', zValidator('json', z.object({ 
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string()
+  })).min(1) 
+})), async (c) => {
+  const { messages } = c.req.valid('json');
   const user = c.get('user');
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const groq = new Groq();
 
   // Obtener contexto de los últimos movimientos del usuario
   const recentMovimientos = await db.select({
@@ -136,22 +145,27 @@ app.post('/chat', zValidator('json', z.object({ message: z.string().min(1) })), 
     `- ${m.fecha}: ${m.tipo} de $${m.monto} en "${m.descripcion}" (${m.categoria || 'Sin categoría'})`
   ).join('\n');
 
-  const completion = await groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: `Eres MoviBot, un asistente financiero experto y amigable para la app MoviTrack. 
-        Tu objetivo es ayudar al usuario a entender sus finanzas y dar consejos de ahorro.
-        
-        NUEVA FUNCIONALIDAD: Ahora el usuario puede descargar informes en PDF desde el botón "Exportar PDF" en el historial de movimientos. Si el usuario te pide un informe, anímalo a usar ese botón después de darle tu análisis.
+  const groqMessages: any[] = [
+    {
+      role: "system",
+      content: `Eres MoviBot, el asistente financiero de MoviTrack. 
+      Tu personalidad: Eres como un amigo humano con mucha empatía y experto en finanzas. Hablas de forma natural, cercana y muy conversacional (como en un chat de WhatsApp).
+      
+      Reglas clave:
+      1. Entiende que el usuario puede hacerte preguntas muy informales o vagas. Ayúdalo a entender sus finanzas sin usar palabras técnicas complicadas.
+      2. Sé breve y conciso, pero siempre amable. No des respuestas gigantescas ni aburridas.
+      3. Usa emojis con naturalidad.
 
-        CONTEXTO DE MOVIMIENTOS RECIENTES DEL USUARIO:
-        ${context || "No hay movimientos registrados aún."}
-        
-        Responde de forma concisa, profesional pero cercana, usando emojis. Si el usuario te pregunta sobre sus gastos, usa la información del contexto.`
-      },
-      { role: "user", content: message }
-    ],
+      CONTEXTO DE MOVIMIENTOS RECIENTES DEL USUARIO:
+      ${context || "No hay movimientos registrados aún."}
+      
+      NUEVA FUNCIONALIDAD: El usuario puede descargar informes en PDF desde el botón "Exportar PDF" en el historial. Solo menciónalo si piden un informe.`
+    },
+    ...messages
+  ];
+
+  const completion = await groq.chat.completions.create({
+    messages: groqMessages,
     model: "llama-3.3-70b-specdec",
     temperature: 0.7,
     max_tokens: 500,
