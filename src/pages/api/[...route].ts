@@ -125,7 +125,7 @@ app.post('/chat', zValidator('json', z.object({
 })), async (c) => {
   const { messages } = c.req.valid('json');
   const user = c.get('user');
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY as string });
+  const groq = new Groq({ apiKey: import.meta.env.GROQ_API_KEY });
 
   // Obtener contexto de los últimos movimientos del usuario
   const recentMovimientos = await db.select({
