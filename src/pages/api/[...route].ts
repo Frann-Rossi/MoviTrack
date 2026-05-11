@@ -38,7 +38,10 @@ app.use('*', async (c, next) => {
 
 app.get('/movimientos', async (c) => {
   const user = c.get('user');
-  const result = await db.select({
+  const month = c.req.query('month');
+  const year = c.req.query('year');
+
+  let query = db.select({
     id: movimientos.id,
     fecha: movimientos.fecha,
     tipo: movimientos.tipo,
@@ -50,7 +53,16 @@ app.get('/movimientos', async (c) => {
   .from(movimientos)
   .leftJoin(categorias, eq(movimientos.categoriaId, categorias.id))
   .where(eq(movimientos.userId, user.id))
-  .orderBy(desc(movimientos.fecha));
+  .$dynamic();
+
+  if (month && year) {
+    query = query.where(and(
+      eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
+      eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
+    ));
+  }
+
+  const result = await query.orderBy(desc(movimientos.fecha));
   
   return c.json(result);
 });
@@ -84,11 +96,24 @@ app.delete('/movimientos/:id', async (c) => {
 
 app.get('/resumen', async (c) => {
   const user = c.get('user');
+  const month = c.req.query('month');
+  const year = c.req.query('year');
+
+  let whereClause = eq(movimientos.userId, user.id);
+
+  if (month && year) {
+    whereClause = and(
+      whereClause,
+      eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
+      eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
+    ) as any;
+  }
+
   const result = await db.select({
     tipo: movimientos.tipo,
     total: sql<number>`sum(cast(${movimientos.monto} as numeric))`
   }).from(movimientos)
-    .where(eq(movimientos.userId, user.id))
+    .where(whereClause)
     .groupBy(movimientos.tipo);
 
   let ingresos = 0;

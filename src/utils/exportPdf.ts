@@ -18,7 +18,7 @@ interface Resumen {
   saldo: number;
 }
 
-export const exportToPDF = (movimientos: Movimiento[], resumen: Resumen) => {
+export const exportToPDF = (movimientos: Movimiento[], resumen: Resumen, periodo?: string) => {
   const doc = new jsPDF();
   const fechaGeneracion = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es });
 
@@ -32,22 +32,33 @@ export const exportToPDF = (movimientos: Movimiento[], resumen: Resumen) => {
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.text('MoviTrack - Informe Financiero', 14, 22);
   
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text(`Generado el: ${fechaGeneracion}`, 14, 30);
+  if (periodo) {
+    doc.setFontSize(14);
+    doc.setTextColor(60);
+    doc.text(`Periodo: ${periodo}`, 14, 30);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generado el: ${fechaGeneracion}`, 14, 37);
+  } else {
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generado el: ${fechaGeneracion}`, 14, 30);
+  }
 
   // Línea decorativa
   doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.setLineWidth(0.5);
-  doc.line(14, 35, 196, 35);
+  const lineY = periodo ? 42 : 35;
+  doc.line(14, lineY, 196, lineY);
 
   // Sección de Resumen
   doc.setFontSize(14);
   doc.setTextColor(0);
-  doc.text('Resumen General', 14, 45);
+  doc.text('Resumen General', 14, lineY + 10);
 
   autoTable(doc, {
-    startY: 50,
+    startY: lineY + 15,
     head: [['Concepto', 'Monto']],
     body: [
       ['Total Ingresos', `$${resumen.ingresos.toLocaleString('es-AR')}`],

@@ -27,6 +27,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
+  // Estados de filtrado
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
   // Estado para el modal de confirmación
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: string | null }>({
     isOpen: false,
@@ -40,9 +45,10 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const queryParams = `?month=${selectedMonth}&year=${selectedYear}`;
       const [movRes, resRes] = await Promise.all([
-        fetch('/api/movimientos'),
-        fetch('/api/resumen')
+        fetch(`/api/movimientos${queryParams}`),
+        fetch(`/api/resumen${queryParams}`)
       ]);
       const movData = await movRes.json();
       const resData = await resRes.json();
@@ -57,7 +63,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,9 +89,25 @@ export default function Dashboard() {
   const handleDelete = async () => {
     if (confirmDelete.id) {
       await fetch(`/api/movimientos/${confirmDelete.id}`, { method: 'DELETE' });
+      setConfirmDelete({ isOpen: false, id: null });
       fetchData();
     }
   };
+
+  // Agrupar movimientos por día
+  const groupedMovimientos = movimientos.reduce((groups: { [key: string]: Movimiento[] }, mov) => {
+    const date = format(new Date(mov.fecha), 'yyyy-MM-dd');
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(mov);
+    return groups;
+  }, {});
+
+  const sortedDates = Object.keys(groupedMovimientos).sort((a, b) => b.localeCompare(a));
+
+  const monthName = format(new Date(selectedYear, selectedMonth - 1), 'MMMM', { locale: es });
+  const periodLabel = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${selectedYear}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -117,46 +139,75 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Tarjetas de Resumen */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Wallet size={60} className="sm:w-20 sm:h-20" />
-          </div>
-          <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Saldo Actual</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
-            ${resumen.saldo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-          </h2>
+      {/* Selector de Periodo y Tarjetas de Resumen */}
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-6 overflow-x-auto pb-2 no-scrollbar">
+          <select 
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {format(new Date(2024, i), 'MMMM', { locale: es }).replace(/^\w/, c => c.toUpperCase())}
+              </option>
+            ))}
+          </select>
+          <select 
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+          >
+            {[2024, 2025, 2026].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <div className="h-6 w-px bg-gray-700 mx-2 hidden sm:block" />
+          <span className="text-gray-400 font-medium whitespace-nowrap hidden sm:block">
+            Resumen de {periodLabel}
+          </span>
         </div>
 
-        <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-emerald-400">
-            <ArrowUpRight size={60} className="sm:w-20 sm:h-20" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Wallet size={60} className="sm:w-20 sm:h-20" />
+            </div>
+            <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Saldo del Mes</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">
+              ${resumen.saldo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </h2>
           </div>
-          <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Ingresos</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-emerald-400">
-            ${resumen.ingresos.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-          </h2>
-        </div>
 
-        <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden group sm:col-span-2 lg:col-span-1">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-red-400">
-            <ArrowDownRight size={60} className="sm:w-20 sm:h-20" />
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-emerald-400">
+              <ArrowUpRight size={60} className="sm:w-20 sm:h-20" />
+            </div>
+            <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Ingresos</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-emerald-400">
+              ${resumen.ingresos.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </h2>
           </div>
-          <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Egresos</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-red-400">
-            ${resumen.egresos.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-          </h2>
+
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden group sm:col-span-2 lg:col-span-1">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-red-400">
+              <ArrowDownRight size={60} className="sm:w-20 sm:h-20" />
+            </div>
+            <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Egresos</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-red-400">
+              ${resumen.egresos.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </h2>
+          </div>
         </div>
       </div>
 
       {/* Historial de Movimientos */}
       <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-xl overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-gray-700 flex justify-between items-center">
-          <h3 className="text-base sm:text-lg font-semibold text-white">Historial de Movimientos</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-white">Detalle de Movimientos</h3>
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => exportToPDF(movimientos, resumen)}
+              onClick={() => exportToPDF(movimientos, resumen, periodLabel)}
               className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium"
               title="Exportar PDF"
             >
@@ -180,86 +231,59 @@ export default function Dashboard() {
               <div className="bg-gray-700/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Plus size={24} className="opacity-20" />
               </div>
-              <p>No hay movimientos registrados.</p>
+              <p>No hay movimientos en este periodo.</p>
               <p className="text-sm">¡Añade tu primera transacción!</p>
             </div>
           ) : (
-            <>
-              {/* Vista Desktop (Tabla) */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-800/50 text-gray-400 text-sm">
-                      <th className="py-4 px-6 font-medium">Fecha</th>
-                      <th className="py-4 px-6 font-medium">Descripción</th>
-                      <th className="py-4 px-6 font-medium text-right">Monto</th>
-                      <th className="py-4 px-6 font-medium text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-700">
-                    {movimientos.map((mov) => (
-                      <tr key={mov.id} className="hover:bg-gray-700/30 transition-colors group">
-                        <td className="py-4 px-6 text-sm text-gray-300">
-                          {format(new Date(mov.fecha), "dd MMM yyyy", { locale: es })}
-                        </td>
-                        <td className="py-4 px-6">
-                          <p className="text-gray-200 font-medium">{mov.descripcion}</p>
-                          <div className="flex gap-2 mt-1">
-                            <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-gray-900/50 ${mov.tipo === 'ingreso' ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {mov.tipo}
-                            </span>
-                          </div>
-                        </td>
-                        <td className={`py-4 px-6 text-right font-semibold ${mov.tipo === 'ingreso' ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {mov.tipo === 'ingreso' ? '+' : '-'}${Number(mov.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <button 
-                            onClick={() => setConfirmDelete({ isOpen: true, id: mov.id })}
-                            className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Vista Mobile (Tarjetas) */}
-              <div className="sm:hidden divide-y divide-gray-700">
-                {movimientos.map((mov) => (
-                  <div key={mov.id} className="p-4 active:bg-gray-700/30 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">
-                          {format(new Date(mov.fecha), "dd MMMM", { locale: es })}
-                        </p>
-                        <p className="text-white font-medium">{mov.descripcion}</p>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <p className={`font-bold ${mov.tipo === 'ingreso' ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {mov.tipo === 'ingreso' ? '+' : '-'}${Number(mov.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                        </p>
-                        <span className={`text-[10px] uppercase font-bold mt-1 ${mov.tipo === 'ingreso' ? 'text-emerald-400/60' : 'text-red-400/60'}`}>
-                          {mov.tipo}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-end mt-2">
-                      <button 
-                        onClick={() => setConfirmDelete({ isOpen: true, id: mov.id })}
-                        className="text-gray-500 p-2 -mr-2"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+            <div className="divide-y divide-gray-700">
+              {sortedDates.map((date) => (
+                <div key={date}>
+                  {/* Encabezado de Día */}
+                  <div className="bg-gray-900/50 px-6 py-2 border-y border-gray-700/50">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      {format(new Date(date + 'T12:00:00'), "EEEE d 'de' MMMM", { locale: es })}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </>
+                  
+                  {/* Movimientos del Día */}
+                  <div className="divide-y divide-gray-700/30">
+                    {groupedMovimientos[date].map((mov) => (
+                      <div key={mov.id} className="hover:bg-gray-700/30 transition-colors group px-6 py-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-200 font-medium truncate">{mov.descripcion}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-gray-900/50 ${mov.tipo === 'ingreso' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {mov.tipo}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 ml-4">
+                            <p className={`font-semibold text-right whitespace-nowrap ${mov.tipo === 'ingreso' ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {mov.tipo === 'ingreso' ? '+' : '-'}${Number(mov.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                            </p>
+                            <button 
+                              onClick={() => setConfirmDelete({ isOpen: true, id: mov.id })}
+                              className="text-gray-500 hover:text-red-400 p-2 -mr-2 transition-all opacity-0 group-hover:opacity-100 hidden sm:block"
+                              title="Eliminar"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                            {/* Botón borrar para mobile siempre visible */}
+                            <button 
+                              onClick={() => setConfirmDelete({ isOpen: true, id: mov.id })}
+                              className="text-gray-500 sm:hidden"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
