@@ -252,10 +252,11 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 tracking-tight">
-            MoviTrack
+            MoviTrack PRO
           </h1>
           <p className="text-gray-400 font-medium mt-1">Tu asistente financiero personal</p>
         </div>
@@ -282,6 +283,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Date Selectors Premium */}
       <div className="mb-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="period-select-container">
@@ -329,6 +331,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Resumen Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <SummaryCard title={selectedDay === 'all' ? 'Saldo del Mes' : 'Saldo del Día'} value={resumen.saldo} icon={<Wallet />} />
           <SummaryCard title="Ingresos" value={resumen.ingresos} icon={<ArrowUpRight />} color="text-emerald-400" />
@@ -336,6 +339,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Movimientos Section */}
       <div className="bg-gray-900/50 rounded-[2rem] border border-gray-800 shadow-2xl overflow-hidden backdrop-blur-sm">
         <div className="p-6 sm:p-8 border-b border-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -345,22 +349,22 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             <button 
               onClick={() => exportToPDF(movimientos, resumen, periodLabel)} 
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-400 bg-blue-500/10 px-5 py-3 rounded-2xl text-sm font-bold hover:bg-blue-500/20 transition-all whitespace-nowrap"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-400 bg-blue-500/10 px-6 py-4 rounded-[1.25rem] text-sm font-black hover:bg-blue-500/20 transition-all whitespace-nowrap"
               title="Exportar PDF"
             >
-              <FileText size={18} />
+              <FileText size={20} />
               <span>PDF</span>
             </button>
             <button 
               onClick={() => exportToCSV(movimientos, periodLabel)} 
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-emerald-400 bg-emerald-500/10 px-5 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500/20 transition-all whitespace-nowrap"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-emerald-400 bg-emerald-500/10 px-6 py-4 rounded-[1.25rem] text-sm font-black hover:bg-emerald-500/20 transition-all whitespace-nowrap border-2 border-emerald-500/20"
               title="Exportar CSV"
             >
-              <Download size={18} />
+              <Download size={20} />
               <span>CSV</span>
             </button>
-            <button onClick={fetchData} className="p-3 bg-gray-800 text-gray-400 rounded-2xl hover:text-white transition-all shrink-0">
-              <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+            <button onClick={fetchData} className="p-4 bg-gray-800 text-gray-400 rounded-2xl hover:text-white transition-all shrink-0">
+              <RefreshCw size={24} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
@@ -400,6 +404,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Floating Chat Button */}
       <button 
         onClick={() => setIsChatOpen(true)}
         className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-tr from-blue-600 to-blue-400 text-white rounded-3xl shadow-2xl shadow-blue-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group"
@@ -407,8 +412,10 @@ export default function Dashboard() {
         <MessageCircle size={32} className="group-hover:rotate-12 transition-transform" />
       </button>
 
+      {/* Chat Drawer */}
       <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
+      {/* Modal Nuevo Movimiento */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 z-[100] animate-in fade-in duration-200">
           <div className="bg-gray-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] border-t sm:border border-gray-800 shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
