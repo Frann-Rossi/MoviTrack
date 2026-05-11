@@ -35,11 +35,11 @@ app.use('*', async (c, next) => {
   c.set('user', session.user);
   await next();
 });
-
 app.get('/movimientos', async (c) => {
   const user = c.get('user');
   const month = c.req.query('month');
   const year = c.req.query('year');
+  const day = c.req.query('day');
 
   let query = db.select({
     id: movimientos.id,
@@ -56,10 +56,18 @@ app.get('/movimientos', async (c) => {
   .$dynamic();
 
   if (month && year) {
-    query = query.where(and(
-      eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
-      eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
-    ));
+    if (day) {
+      query = query.where(and(
+        eq(sql`EXTRACT(DAY FROM ${movimientos.fecha})`, Number(day)),
+        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
+        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
+      ));
+    } else {
+      query = query.where(and(
+        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
+        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
+      ));
+    }
   }
 
   const result = await query.orderBy(desc(movimientos.fecha));
@@ -98,15 +106,25 @@ app.get('/resumen', async (c) => {
   const user = c.get('user');
   const month = c.req.query('month');
   const year = c.req.query('year');
+  const day = c.req.query('day');
 
   let whereClause = eq(movimientos.userId, user.id);
 
   if (month && year) {
-    whereClause = and(
-      whereClause,
-      eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
-      eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
-    ) as any;
+    if (day) {
+      whereClause = and(
+        whereClause,
+        eq(sql`EXTRACT(DAY FROM ${movimientos.fecha})`, Number(day)),
+        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
+        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
+      ) as any;
+    } else {
+      whereClause = and(
+        whereClause,
+        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
+        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
+      ) as any;
+    }
   }
 
   const result = await db.select({
@@ -147,7 +165,7 @@ app.post('/chat', zValidator('json', z.object({
     role: z.enum(['user', 'assistant']),
     content: z.string()
   })).min(1) 
-})), async (c) => {
+ })), async (c) => {
   const { messages } = c.req.valid('json');
   const user = c.get('user');
   const groq = new Groq({ apiKey: import.meta.env.GROQ_API_KEY });
@@ -164,29 +182,37 @@ app.post('/chat', zValidator('json', z.object({
   .leftJoin(categorias, eq(movimientos.categoriaId, categorias.id))
   .where(eq(movimientos.userId, user.id))
   .orderBy(desc(movimientos.fecha))
-  .limit(30);
+  .limit(50);
 
   const context = recentMovimientos.map(m => 
-    `- ${m.fecha}: ${m.tipo} de $${m.monto} en "${m.descripcion}" (${m.categoria || 'Sin categoría'})`
+    `- ${format(new Date(m.fecha), 'dd/MM/yyyy')}: ${m.tipo} de $${m.monto} en "${m.descripcion}" (${m.categoria || 'Sin categoría'})`
   ).join('\n');
 
   const groqMessages: any[] = [
     {
       role: "system",
-      content: `Eres MoviBot, el asistente financiero de MoviTrack. 
-      Tu personalidad: Eres como un amigo humano con mucha empatía y experto en finanzas. Hablas de forma natural, cercana y muy conversacional (como en un chat de WhatsApp).
+      content: `Eres MoviBot, el asistente financiero ultra-inteligente de MoviTrack.
       
-      REGLAS CRÍTICAS:
-      1. Entiende que el usuario puede hacerte preguntas muy informales o vagas. Ayúdalo a entender sus finanzas sin usar palabras técnicas complicadas.
-      2. Sé breve y conciso, pero siempre amable. No des respuestas gigantescas ni aburridas.
-      3. Usa emojis con naturalidad.
-      4. NUNCA digas que agregaste, registraste o modificaste un movimiento. Vos NO podés hacer cambios en la base de datos. Si el usuario te pide agregar un ingreso, egreso o cualquier movimiento, decile amablemente que use el botón "Nuevo Movimiento" (el botón verde con el símbolo +) que está arriba en el Dashboard.
-      5. Tu rol es SOLO analizar datos existentes, dar consejos financieros y responder preguntas. NO podés crear, editar ni borrar movimientos.
+      PERSONALIDAD:
+      - Eres extremadamente empático, como un mentor financiero que realmente se preocupa por el éxito del usuario.
+      - Hablas de forma natural, fluida y amigable (español rioplatense/latino cálido).
+      - Si el usuario vendió mucho, ¡felicitalo con entusiasmo! Si gastó de más, dale un consejo constructivo sin juzgar.
+      
+      CONOCIMIENTO DE LA APP:
+      - Sabes que el usuario puede filtrar por MES, AÑO e incluso por un DÍA específico usando los selectores en la parte superior del Dashboard.
+      - Sabes que puede exportar reportes PDF detallados del periodo que está viendo.
+      - Sabes que puede registrar nuevos movimientos con el botón "+" verde.
+      
+      REGLAS DE ORO:
+      1. NUNCA inventes que podés modificar la base de datos. Si te piden "anotá esto", deciles que usen el botón "+" del Dashboard.
+      2. Si te preguntan por un gasto o ingreso específico, buscalo en el contexto que te paso abajo.
+      3. Sé proactivo: si ves una tendencia (ej. muchos gastos en comida), sugerí formas de ahorro.
+      4. Si el usuario te pregunta por un día o mes, confirmale que puede usar los filtros del Dashboard para verlo con más detalle y exportarlo a PDF.
 
-      CONTEXTO DE MOVIMIENTOS RECIENTES DEL USUARIO:
-      ${context || "No hay movimientos registrados aún."}
+      DATOS REALES DEL USUARIO (Contexto):
+      ${context || "El usuario aún no tiene movimientos registrados. ¡Invitalo a crear el primero!"}
       
-      El usuario puede descargar informes en PDF desde el botón "Exportar PDF" en el historial. Solo menciónalo si piden un informe.`
+      Usuario actual: ${user.name}`
     },
     ...messages
   ];
@@ -195,7 +221,7 @@ app.post('/chat', zValidator('json', z.object({
     messages: groqMessages,
     model: "llama-3.3-70b-versatile",
     temperature: 0.7,
-    max_tokens: 500,
+    max_tokens: 800,
   });
 
   return c.json({ response: completion.choices[0]?.message?.content || "No pude procesar tu solicitud." });

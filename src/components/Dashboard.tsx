@@ -31,6 +31,7 @@ export default function Dashboard() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
 
   // Estado para el modal de confirmación
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: string | null }>({
@@ -45,7 +46,10 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const queryParams = `?month=${selectedMonth}&year=${selectedYear}`;
+      let queryParams = `?month=${selectedMonth}&year=${selectedYear}`;
+      if (selectedDay !== 'all') {
+        queryParams += `&day=${selectedDay}`;
+      }
       const [movRes, resRes] = await Promise.all([
         fetch(`/api/movimientos${queryParams}`),
         fetch(`/api/resumen${queryParams}`)
@@ -63,7 +67,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, selectedDay]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,8 +110,13 @@ export default function Dashboard() {
 
   const sortedDates = Object.keys(groupedMovimientos).sort((a, b) => b.localeCompare(a));
 
-  const monthName = format(new Date(selectedYear, selectedMonth - 1), 'MMMM', { locale: es });
-  const periodLabel = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${selectedYear}`;
+  const monthDate = new Date(selectedYear, selectedMonth - 1);
+  const monthName = format(monthDate, 'MMMM', { locale: es });
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+
+  const periodLabel = selectedDay === 'all' 
+    ? `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${selectedYear}`
+    : `${selectedDay} de ${monthName} de ${selectedYear}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -141,31 +150,61 @@ export default function Dashboard() {
 
       {/* Selector de Periodo y Tarjetas de Resumen */}
       <div className="mb-8">
-        <div className="flex items-center gap-4 mb-6 overflow-x-auto pb-2 no-scrollbar">
-          <select 
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-          >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {format(new Date(2024, i), 'MMMM', { locale: es }).replace(/^\w/, c => c.toUpperCase())}
-              </option>
-            ))}
-          </select>
-          <select 
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-          >
-            {[2024, 2025, 2026].map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <div className="h-6 w-px bg-gray-700 mx-2 hidden sm:block" />
-          <span className="text-gray-400 font-medium whitespace-nowrap hidden sm:block">
-            Resumen de {periodLabel}
-          </span>
+        <div className="flex flex-wrap items-center gap-3 mb-6 bg-gray-800/40 p-2 rounded-2xl border border-gray-700/50 backdrop-blur-sm">
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-xl border border-gray-700">
+            <span className="text-xs font-bold text-gray-500 uppercase">Mes</span>
+            <select 
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(Number(e.target.value));
+                setSelectedDay('all');
+              }}
+              className="bg-transparent text-white text-sm font-medium outline-none cursor-pointer"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1} className="bg-gray-800">
+                  {format(new Date(2024, i), 'MMMM', { locale: es }).replace(/^\w/, c => c.toUpperCase())}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-xl border border-gray-700">
+            <span className="text-xs font-bold text-gray-500 uppercase">Año</span>
+            <select 
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(Number(e.target.value));
+                setSelectedDay('all');
+              }}
+              className="bg-transparent text-white text-sm font-medium outline-none cursor-pointer"
+            >
+              {[2024, 2025, 2026].map(y => (
+                <option key={y} value={y} className="bg-gray-800">{y}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-xl border border-gray-700">
+            <span className="text-xs font-bold text-gray-500 uppercase">Día</span>
+            <select 
+              value={selectedDay}
+              onChange={(e) => setSelectedDay(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              className="bg-transparent text-white text-sm font-medium outline-none cursor-pointer min-w-[80px]"
+            >
+              <option value="all" className="bg-gray-800">Todos</option>
+              {Array.from({ length: daysInMonth }, (_, i) => (
+                <option key={i + 1} value={i + 1} className="bg-gray-800">{i + 1}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2 pr-2">
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {selectedDay === 'all' ? 'Vista Mensual' : 'Vista Diaria'}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -173,7 +212,9 @@ export default function Dashboard() {
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
               <Wallet size={60} className="sm:w-20 sm:h-20" />
             </div>
-            <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Saldo del Mes</p>
+            <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">
+              {selectedDay === 'all' ? 'Saldo del Mes' : 'Saldo del Día'}
+            </p>
             <h2 className="text-3xl sm:text-4xl font-bold text-white">
               ${resumen.saldo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </h2>
