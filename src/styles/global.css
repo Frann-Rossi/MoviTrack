@@ -15,12 +15,28 @@
     @apply w-full bg-gray-950 border border-gray-800 rounded-2xl py-3 pl-11 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all;
   }
   .period-select-container {
-    @apply flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-xl border border-gray-700;
+    @apply flex items-center gap-2 px-4 py-2.5 bg-gray-900/60 rounded-2xl border border-gray-700/50 hover:border-blue-500/50 transition-all cursor-pointer;
   }
   .period-select {
-    @apply bg-transparent text-white text-sm font-medium outline-none cursor-pointer;
+    @apply bg-transparent text-white text-sm font-bold outline-none cursor-pointer appearance-none pr-1;
   }
   .summary-card {
-    @apply bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden group transition-all hover:border-gray-600;
+    @apply bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-95;
   }
+  /* Chat Styles */
+  .chat-bubble-user {
+    @apply bg-blue-600 text-white rounded-2xl rounded-tr-none px-4 py-2 max-w-[85%] self-end shadow-lg;
+  }
+  .chat-bubble-ai {
+    @apply bg-gray-800 text-gray-200 rounded-2xl rounded-tl-none px-4 py-2 max-w-[85%] self-start shadow-lg border border-gray-700;
+  }
+}
+
+/* Custom Scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
