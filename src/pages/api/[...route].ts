@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import Groq from 'groq-sdk';
+import { format } from 'date-fns';
 import { db } from '../../../db';
 import { movimientos, categorias } from '../../../db/schema';
 import { desc, eq, sql, and } from 'drizzle-orm';
