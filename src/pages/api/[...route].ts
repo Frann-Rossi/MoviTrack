@@ -36,6 +36,21 @@ app.use('*', async (c, next) => {
   c.set('user', session.user);
   await next();
 });
+const getDateFilters = (month?: string, year?: string, day?: string) => {
+  if (!month || !year) return null;
+  
+  const filters = [
+    eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
+    eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
+  ];
+
+  if (day) {
+    filters.push(eq(sql`EXTRACT(DAY FROM ${movimientos.fecha})`, Number(day)));
+  }
+
+  return and(...filters);
+};
+
 app.get('/movimientos', async (c) => {
   const user = c.get('user');
   const month = c.req.query('month');
@@ -56,19 +71,9 @@ app.get('/movimientos', async (c) => {
   .where(eq(movimientos.userId, user.id))
   .$dynamic();
 
-  if (month && year) {
-    if (day) {
-      query = query.where(and(
-        eq(sql`EXTRACT(DAY FROM ${movimientos.fecha})`, Number(day)),
-        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
-        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
-      ));
-    } else {
-      query = query.where(and(
-        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
-        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
-      ));
-    }
+  const dateFilter = getDateFilters(month, year, day);
+  if (dateFilter) {
+    query = query.where(dateFilter);
   }
 
   const result = await query.orderBy(desc(movimientos.fecha));
@@ -109,30 +114,17 @@ app.get('/resumen', async (c) => {
   const year = c.req.query('year');
   const day = c.req.query('day');
 
-  let whereClause = eq(movimientos.userId, user.id);
-
-  if (month && year) {
-    if (day) {
-      whereClause = and(
-        whereClause,
-        eq(sql`EXTRACT(DAY FROM ${movimientos.fecha})`, Number(day)),
-        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
-        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
-      ) as any;
-    } else {
-      whereClause = and(
-        whereClause,
-        eq(sql`EXTRACT(MONTH FROM ${movimientos.fecha})`, Number(month)),
-        eq(sql`EXTRACT(YEAR FROM ${movimientos.fecha})`, Number(year))
-      ) as any;
-    }
+  let conditions = [eq(movimientos.userId, user.id)];
+  const dateFilter = getDateFilters(month, year, day);
+  if (dateFilter) {
+    conditions.push(dateFilter as any);
   }
 
   const result = await db.select({
     tipo: movimientos.tipo,
     total: sql<number>`sum(cast(${movimientos.monto} as numeric))`
   }).from(movimientos)
-    .where(whereClause)
+    .where(and(...conditions))
     .groupBy(movimientos.tipo);
 
   let ingresos = 0;
