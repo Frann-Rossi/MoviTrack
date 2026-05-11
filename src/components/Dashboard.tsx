@@ -342,10 +342,10 @@ export default function Dashboard() {
             <h3 className="text-xl font-bold text-white">Detalle de Movimientos</h3>
             <p className="text-sm text-gray-500 mt-1">{periodLabel}</p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             <button 
               onClick={() => exportToPDF(movimientos, resumen, periodLabel)} 
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-400 bg-blue-500/10 px-4 py-3 rounded-2xl text-sm font-bold hover:bg-blue-500/20 transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-blue-400 bg-blue-500/10 px-5 py-3 rounded-2xl text-sm font-bold hover:bg-blue-500/20 transition-all whitespace-nowrap"
               title="Exportar PDF"
             >
               <FileText size={18} />
@@ -353,13 +353,13 @@ export default function Dashboard() {
             </button>
             <button 
               onClick={() => exportToCSV(movimientos, periodLabel)} 
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-emerald-400 bg-emerald-500/10 px-4 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500/20 transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-emerald-400 bg-emerald-500/10 px-5 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500/20 transition-all whitespace-nowrap"
               title="Exportar CSV"
             >
               <Download size={18} />
               <span>CSV</span>
             </button>
-            <button onClick={fetchData} className="p-3 bg-gray-800 text-gray-400 rounded-2xl hover:text-white transition-all">
+            <button onClick={fetchData} className="p-3 bg-gray-800 text-gray-400 rounded-2xl hover:text-white transition-all shrink-0">
               <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
