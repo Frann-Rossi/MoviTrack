@@ -15,13 +15,17 @@
     @apply w-full bg-gray-950 border border-gray-800 rounded-2xl py-3 pl-11 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all;
   }
   .period-select-container {
-    @apply flex items-center gap-2 px-4 py-2.5 bg-gray-900/60 rounded-2xl border border-gray-700/50 hover:border-blue-500/50 transition-all cursor-pointer;
+    @apply flex items-center gap-2 px-4 py-2.5 bg-gray-900/80 rounded-full border border-gray-700/50 hover:border-blue-500/50 transition-all cursor-pointer shadow-inner;
   }
   .period-select {
-    @apply bg-transparent text-white text-sm font-bold outline-none cursor-pointer appearance-none pr-1;
+    @apply bg-transparent text-white text-sm font-black outline-none cursor-pointer appearance-none pr-6 relative;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 1rem;
   }
   .summary-card {
-    @apply bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden transition-all hover:scale-[1.02] active:scale-95;
+    @apply bg-gray-900 border border-gray-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden transition-all hover:scale-[1.02] active:scale-95;
   }
   /* Chat Styles */
   .chat-bubble-user {
