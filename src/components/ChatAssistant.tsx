@@ -54,21 +54,34 @@ export default function ChatAssistant() {
 
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
-      {/* Botón Flotante */}
+      {/* Botón Flotante Premium */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all transform hover:scale-110 active:scale-95 ${
+        className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 transform hover:scale-110 active:scale-95 group overflow-hidden ${
           isOpen 
             ? 'bg-gray-800 text-white rotate-90' 
-            : 'bg-gradient-to-tr from-blue-600 to-emerald-500 text-white'
+            : 'bg-gray-900/80 backdrop-blur-xl border border-white/10 text-white'
         }`}
       >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
+        <div className={`absolute inset-0 bg-gradient-to-tr from-blue-600 via-blue-500 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+        
+        {isOpen ? (
+          <X size={28} className="relative z-10" />
+        ) : (
+          <div className="relative z-10 flex items-center justify-center">
+            <Sparkles size={30} className="text-blue-400 group-hover:text-white transition-colors duration-300" />
+            <div className="absolute -top-1 -right-1">
+              <div className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Glow effect */}
         {!isOpen && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
-          </span>
+          <div className="absolute inset-0 shadow-[0_0_50px_rgba(37,99,235,0.2)] group-hover:shadow-[0_0_60px_rgba(37,99,235,0.4)] transition-all duration-500" />
         )}
       </button>
 

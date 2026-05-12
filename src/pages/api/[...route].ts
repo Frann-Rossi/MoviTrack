@@ -16,6 +16,13 @@ type Variables = {
 
 const app = new Hono<{ Variables: Variables }>().basePath('/api');
 app.use('*', logger());
+app.use('*', async (c, next) => {
+  console.log(`[API] Request: ${c.req.method} ${c.req.path}`);
+  const start = Date.now();
+  await next();
+  const end = Date.now();
+  console.log(`[API] Response: ${c.req.method} ${c.req.path} - ${c.res.status} (${end - start}ms)`);
+});
 
 // Exponer rutas de Better Auth
 app.on(['POST', 'GET'], '/auth/*', (c) => {

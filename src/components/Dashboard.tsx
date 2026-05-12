@@ -72,109 +72,11 @@ const MovementRow = ({ mov, onDelete }: { mov: Movimiento, onDelete: () => void 
   </div>
 );
 
-const ChatDrawer = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
-
-    const userMsg = input;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, { role: 'user', content: userMsg }] })
-      });
-      if (!res.ok) throw new Error('Error en el chat');
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Lo siento, hubo un error. 🤔' }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[100] flex justify-end sm:p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-gray-900 w-full sm:max-w-md h-full sm:h-auto sm:rounded-[2.5rem] border-l sm:border border-gray-800 shadow-2xl flex flex-col overflow-hidden transform transition-all animate-in slide-in-from-right duration-300">
-        <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900/80">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/20">
-              <MessageCircle size={28} />
-            </div>
-            <div>
-              <h3 className="font-black text-white tracking-tight">MoviBot PRO</h3>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Activo</span>
-              </div>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-3 hover:bg-gray-800 rounded-full text-gray-500 transition-all">
-            <X size={24} />
-          </button>
-        </div>
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
-          {messages.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-500">
-              <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mb-6 border border-gray-700">
-                <MessageCircle size={40} />
-              </div>
-              <p className="font-bold text-gray-300">¡Hola! Soy tu asistente financiero.</p>
-              <p className="text-sm mt-2 opacity-60">Pregúntame sobre tus gastos, ahorros o pedime un consejo para mejorar.</p>
-            </div>
-          )}
-          {messages.map((m, i) => (
-            <div key={i} className={m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'}>
-              {m.content}
-            </div>
-          ))}
-          {loading && (
-            <div className="chat-bubble-ai animate-pulse">Pensando...</div>
-          )}
-        </div>
-
-        <form onSubmit={sendMessage} className="p-6 border-t border-gray-800 bg-gray-900/80">
-          <div className="relative flex items-center">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Escribe un mensaje..."
-              className="w-full bg-gray-950 border border-gray-800 rounded-2xl py-4 pl-5 pr-14 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium shadow-inner"
-            />
-            <button type="submit" className="absolute right-3 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all shadow-lg">
-              <Send size={20} />
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 export default function Dashboard() {
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [resumen, setResumen] = useState<Resumen>({ ingresos: 0, egresos: 0, saldo: 0 });
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -196,12 +98,20 @@ export default function Dashboard() {
       let queryParams = `?month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDay !== 'all') queryParams += `&day=${selectedDay}`;
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
       const [movRes, resRes] = await Promise.all([
-        fetch(`/api/movimientos${queryParams}`),
-        fetch(`/api/resumen${queryParams}`)
+        fetch(`/api/movimientos${queryParams}`, { signal: controller.signal }),
+        fetch(`/api/resumen${queryParams}`, { signal: controller.signal })
       ]);
       
-      if (!movRes.ok || !resRes.ok) throw new Error('Error cargando datos');
+      clearTimeout(timeoutId);
+      
+      if (!movRes.ok || !resRes.ok) {
+        console.error('API Error:', movRes.status, resRes.status);
+        throw new Error('Error en el servidor');
+      }
       
       const movData = await movRes.json();
       const resData = await resRes.json();
@@ -210,11 +120,13 @@ export default function Dashboard() {
       setResumen(resData || { ingresos: 0, egresos: 0, saldo: 0 });
     } catch (error) {
       console.error('Error fetching data:', error);
-      setMovimientos([]);
-      setResumen({ ingresos: 0, egresos: 0, saldo: 0 });
+      // Solo limpiamos si es un error real, no un aborto por un nuevo efecto
+      if (error instanceof Error && error.name !== 'AbortError') {
+        setMovimientos([]);
+        setResumen({ ingresos: 0, egresos: 0, saldo: 0 });
+      }
     } finally {
-      // Pequeño delay para que no sea un cambio brusco y asegurar que la UI se refresque
-      setTimeout(() => setLoading(false), 300);
+      setLoading(false);
     }
   };
 
@@ -243,7 +155,8 @@ export default function Dashboard() {
   const handleDelete = async () => {
     if (confirmDelete.id) {
       try {
-        await fetch(`/api/movimientos/${confirmDelete.id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/movimientos/${confirmDelete.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Error al eliminar');
         setConfirmDelete({ isOpen: false, id: null });
         fetchData();
       } catch (error) {
@@ -420,17 +333,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-
-      {/* Floating Chat Button */}
-      <button 
-        onClick={() => setIsChatOpen(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-tr from-blue-600 to-blue-400 text-white rounded-full shadow-[0_0_50px_rgba(37,99,235,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group border-2 border-white/20"
-      >
-        <MessageCircle size={32} className="group-hover:rotate-12 transition-transform" />
-      </button>
-
-      {/* Chat Drawer */}
-      <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
       {/* Modal Nuevo Movimiento */}
       {isModalOpen && (
