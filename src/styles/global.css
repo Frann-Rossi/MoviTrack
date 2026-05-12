@@ -9,7 +9,7 @@
     @apply bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white transition-all shadow-lg shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-2 font-medium;
   }
   .glass-card {
-    @apply bg-gray-900/50 border border-gray-800 rounded-3xl shadow-2xl backdrop-blur-xl relative overflow-hidden group;
+    @apply bg-gray-900/50 border border-gray-800 rounded-3xl shadow-2xl backdrop-blur-xl relative overflow-hidden;
   }
   .input-field {
     @apply w-full bg-gray-950 border border-gray-800 rounded-2xl py-3 pl-11 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all;
@@ -21,7 +21,7 @@
     @apply bg-transparent text-white text-sm font-bold outline-none cursor-pointer appearance-none pr-1;
   }
   .summary-card {
-    @apply bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-95;
+    @apply bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden transition-all hover:scale-[1.02] active:scale-95;
   }
   /* Chat Styles */
   .chat-bubble-user {
